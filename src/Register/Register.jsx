@@ -1,7 +1,8 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, sendEmailVerification, updateProfile } from "firebase/auth";
 import auth from "../firebase/firebase.config";
 import { useState } from "react";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 
 const Register = () => {
@@ -12,9 +13,11 @@ const Register = () => {
 
     const handleRegister = e => {
         e.preventDefault();
+        const name = e.target.name.value;
         const email = e.target.email.value;
         const password = e.target.password.value;
-        console.log(email, password);
+        const accepted = e.target.terms.checked;
+        console.log(name, email, password, accepted);
 
         setRegisterError('');
         setSuccess('');
@@ -27,6 +30,10 @@ const Register = () => {
             setRegisterError('Your password should have at least one upper case Characters.')
             return;
         }
+        else if(!accepted){
+            setRegisterError('Please accept our terms and conditions')
+            return;
+        }
 
 
 
@@ -34,6 +41,19 @@ const Register = () => {
             .then(result => {
                 console.log(result.user);
                 setSuccess('User Created Successfully')
+                // update profile
+
+                updateProfile(result.user, {
+                    displayName: name,
+                    photoURL: "",
+                })
+                .then( () => console.log('Profile Updated'))
+                .catch()
+
+                sendEmailVerification(result.user)
+                .then(() =>{
+                    alert('Pleasecheck your email and verify your account')
+                })
             })
             .catch(error => {
                 console.error(error);
@@ -47,21 +67,30 @@ const Register = () => {
             <div className="mx-auto md:w-1/2">
                 <h2 className="text-3xl py-2 px-4 mb-8">Please Register!</h2>
                 <form onSubmit={handleRegister}>
-                    <input className="mb-4 w-3/4 py-2 px-4" type="email" name="email" placeholder="Email Address" id="" required />
+                    <input className="mb-4 w-full py-2 px-4" type="text" name="name" placeholder="Your Name" id="" required />
                     <br />
-                    <input
-                        className="mb-4 w-3/4 py-2 px-4"
-                        type={showPassword ? "text" : "password"}
-                        name="password"
-                        placeholder="password"
-                        id="" required />
-                    <span onClick={ () => setShowPassword(!showPassword)}>
-                        {
-                            setShowPassword ? <FaEyeSlash></FaEyeSlash> : <FaEye></FaEye>
-                        }
-                    </span>
+                    <input className="mb-4 w-full py-2 px-4" type="email" name="email" placeholder="Email Address" id="" required />
                     <br />
-                    <input className=" btn btn-secondary mb-4 w-3/4" type="submit" value="Register" />
+                    <div className="mb-4 relative">
+                        <input
+                            className=" w-full py-2 px-4"
+                            type={showPassword ? "text" : "password"}
+                            name="password"
+                            placeholder="password"
+                            id="" required />
+                        <span className="absolute top-3 right-2" onClick={() => setShowPassword(!showPassword)}>
+                            {
+                                setShowPassword ? <FaEyeSlash></FaEyeSlash> : <FaEye></FaEye>
+                            }
+                        </span>
+                    </div>
+                    <br />
+                    <div className="mb-2">
+                        <input type="checkbox" name="terms" id="terms" />
+                        <label className="ml-2" htmlFor="terms">Accept our <a href="">Terms and Conditions</a></label>
+                    </div>
+                    <br />
+                    <input className=" btn btn-secondary mb-4 w-full" type="submit" value="Register" />
                 </form>
                 {
                     registerError && <p className="text-red-700">{registerError}</p>
@@ -69,6 +98,7 @@ const Register = () => {
                 {
                     success && <p className="text-green-600">{success}</p>
                 }
+                <p>Already have an account? Please <Link to="/login">Login</Link></p>
             </div>
         </div>
     );
